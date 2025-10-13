@@ -9,7 +9,6 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-
     permissions:
       contents: write
       packages: write
@@ -18,6 +17,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
+    - name: Publish GitHub Release
+      id: publish-release
+      uses: ghalactic/github-release-from-tag@v5
+      with:
+        prerelease: "false"
+        reactions: heart,rocket,eyes
+
     - name: Login to GitHub Container Registry
       uses: docker/login-action@v3
       with:
@@ -25,15 +31,38 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: set lower case owner name
+    - name: Set lower case owner name
       id: lowercase_username
-      run: |
-        echo "actor=${OWNER,,}" >> $GITHUB_OUTPUT
+      run: echo "actor=${OWNER,,}" >> $GITHUB_OUTPUT
       env:
         OWNER: '${{ github.repository_owner }}'
       shell: bash
 
-    - name: Build the Docker container
+    - name: Build and Push Docker Container
       run: |
-            docker build . --tag ghcr.io/${{ steps.lowercase_username.outputs.actor }}/${{ github.event.repository.name }}:latest
-            docker push ghcr.io/${{ steps.lowercase_username.outputs.actor }}/${{ github.event.repository.name }}:latest
+        docker build . --tag ghcr.io/${{ steps.lowercase_username.outputs.actor }}/${{ github.event.repository.name }}:latest
+        docker push ghcr.io/${{ steps.lowercase_username.outputs.actor }}/${{ github.event.repository.name }}:latest
+
+  executable:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    needs: publish
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Create Executable
+      uses: sayyid5416/pyinstaller@v1
+      with:
+        python_ver: '3.11'
+        spec: 'main.spec'
+        requirements: 'requirements.txt'
+        upload_exe_with_name: 'zu-bbbearbeiten.exe'
+
+    - name: Upload Executable to Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: gh release upload ${{ github.ref_name }} ./dist/main.exe
