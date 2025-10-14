@@ -1,8 +1,20 @@
 from flask import Flask, Response, redirect, render_template, request, url_for
+from database import db
+import os
 
 import helper
 
 app = Flask(__name__)
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql+psycopg2://{dbuser}:{dbpass}@{dbhost}/{dbname}".format(
+    dbuser=os.environ["DBUSER"],
+    dbpass=os.environ['DBPASS'],
+    dbhost=os.environ['DBHOST'],
+    dbname=os.environ['DBNAME']
+)
+
+db.init_app(app)
+app.app_context().push()
+db.create_all()
 
 
 @app.route("/getCSV")
@@ -16,7 +28,7 @@ def get_csv():
 
 @app.route("/")
 def index():
-    items = helper.get_all()
+    items = helper.get_all(sorted=True)
     return render_template("index.html", items=items)
 
 
@@ -35,6 +47,6 @@ def update(index):
     helper.update(index)
     return redirect(url_for("index"))
 
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0")
-
