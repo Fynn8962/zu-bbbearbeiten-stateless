@@ -60,17 +60,10 @@ jobs:
           name: python-app
           path: .
 
-      - name: 'Login via Publish Profile'
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_B2DE5F1C0ACB4B7196106C9B85457645 }}
-
-
-
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'lace-respected-haddock'
           slot-name: 'Production'
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_B2DE5F1C0ACB4B7196106C9B85457645 }}
           package: .
-
